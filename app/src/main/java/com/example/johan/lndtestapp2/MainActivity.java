@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -44,13 +45,12 @@ import javax.net.ssl.TrustManagerFactory;
 import io.grpc.Attributes;
 import io.grpc.CallCredentials;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
-import io.grpc.internal.GrpcUtil;
 import io.grpc.internal.IoUtils;
 import io.grpc.okhttp.OkHttpChannelBuilder;
+import lndbindings.GetStreamResultCallback;
 import lndbindings.Lndbindings;
 import lnrpc.LightningGrpc;
 import lnrpc.*;
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
             InputStream is = am.open("lnd.conf");
             byte[] buffer = new byte[100];
             int l;
-            while ( (l = is.read(buffer)) > 0) {
+            while ((l = is.read(buffer)) > 0) {
                 System.out.println("red: " + String.valueOf(buffer));
                 fout.write(buffer, 0, l);
             }
@@ -101,12 +101,31 @@ public class MainActivity extends AppCompatActivity {
         Runnable startLnd = new Runnable() {
             @Override
             public void run() {
-                System.out.println("starting lnd");
                 Lndbindings.start(dataDir.getAbsolutePath());
             }
         };
         new Thread(startLnd).start();
+
+        try {
+            String json = Lndbindings.getInfo();
+            System.out.println("info:" + json);
+        } catch (Exception e) {}
+
+
+
+        GetStreamResultCallback cb = new GetStreamResultCallback() {
+            @Override
+            public void onError(Exception p0) {
+                System.out.println(p0);
+            }
+            @Override
+            public void onStreamResult(long p0) {
+                System.out.println(p0);
+            }
+        };
+        Lndbindings.getStreamResult(cb);
     }
+
 
     /**
      * A native method that is implemented by the 'native-lib' native library,
